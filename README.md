@@ -6,9 +6,9 @@ Script Python automatisant la création de 3 PNG par événement à partir d'un 
 
 ```
 projet/
-├── script_generator.py    # Script principal
-├── Ice Cream.ttf          # Police pour les noms (100px)
-├── Ligurino.ttf           # Police pour les infos (54px et 68px)
+├── png_generator.py       # Script principal
+├── icecream-standard.otf  # Police pour les noms
+├── ligurino bold.ttf      # Police pour les infos
 ├── invite.png             # Image de fond 1920x1080 (transparent)
 ├── data.csv               # Données des événements
 └── export_png/            # Dossier de sortie (créé automatiquement)
@@ -26,28 +26,27 @@ pip install Pillow
 ```
 
 ### 3. Préparer les fichiers
-- Place les polices `Ice Cream.ttf` et `Ligurino.ttf` à la racine
+- Place les polices `icecream-standard.otf` et `ligurino bold.ttf` à la racine
 - Place `invite.png` (1920x1080, transparent) à la racine
 - Crée ton fichier `data.csv`
 
 ## 📝 Format du CSV
 
-Le fichier `data.csv` doit contenir 5 colonnes séparées par des **tabulations** :
+Le fichier `data.csv` doit contenir 7 colonnes séparées par des **tabulations** :
 
 ```
-DATE DE L'EVENT    EVENT    LIEU    INFOS    NOM
+QUOI    QUAND    OÙ    NOM    HEURE    DATE_SOURCE    CONTACT
 ```
 
 ### Exemple (copier-coller depuis Google Sheets) :
 ```
-28 juin	Courses de caisses à savon|5ème édition	Leignon	FB : Les Forbotis de Leignon	Sébastien Cosse
-27-28-29 juin	Week-end festif au RUSG Sinsin	Sinsin	FB : RUSG Sinsin	Marc Joris
-5-6 juillet	Triathlon du moulin de Boiron	Gedinne	www.triathlonboiron.be	Léonard Sindbad
+Ceci est un test en une ligne	le 3 mars	Centre Culturel Dinant	Fiorine Guery	9h40	20 février	www.ccdinant.be
+Ceci est un test en 2 lignes| Ceci est un test en 2 lignes	le 3, 4, 5 et 31 mars| et aussi en avril	Centre Culturel Dinant et| Centre Culturel Dinant	Amélie Bolen 2	9h40	20 février	www.ccdinant.be et| sur www.ccdinant.be
 ```
 
 **Astuce** : Copie directement depuis Google Sheets et colle dans un fichier `.csv` - les tabulations seront préservées !
 
-### ✂️ Forcer une coupure en 2 lignes
+### ✂️ Forcer une coupure en 2 lignes (PNG 3 / QQO)
 
 Pour forcer un texte sur 2 lignes, utilise le **pipe "|"** à l'endroit de la coupure :
 
@@ -57,21 +56,21 @@ Courses de caisses à savon|5ème édition
 
 **Raccourci clavier sur Mac** : `Option + Shift + L` (AZERTY) ou `Option + 7` (QWERTY)
 
-Si aucun pipe n'est présent, le script détecte automatiquement si le texte doit passer en 2 lignes.
+Si aucun pipe n'est présent, le script détecte automatiquement si le texte doit passer en 2 lignes (pour le PNG 3 / QQO).
 
 ## ▶️ Utilisation
 
 ### Méthode 1 : Double-clic (Windows)
-Double-clique sur `script_generator.py`
+Double-clique sur `png_generator.py`
 
 ### Méthode 2 : Terminal
 ```bash
-python script_generator.py
+python png_generator.py
 ```
 
 ### Méthode 3 : Ligne de commande (Linux/Mac)
 ```bash
-python3 script_generator.py
+python3 png_generator.py
 ```
 
 ## 📤 Résultat
@@ -87,7 +86,8 @@ Pour chaque ligne du CSV, le script génère 3 PNG dans `export_png/` :
 
 ### 2️⃣ `[nom]_thema.png`
 - Fond : invite.png
-- Date (colonne "Quand ?") en bas à droite
+- Quoi (colonne "QUOI") en bas à droite
+- Toujours sur une seule ligne (le `|` est retiré)
 - Police : Ligurino, 54px, blanc
 - Position : y=972px, aligné à droite (x=1824px)
 
@@ -121,7 +121,7 @@ pip install Pillow
 ```
 
 ### "Police manquante"
-Vérifie que `Ice Cream.ttf` et `Ligurino.ttf` sont bien à la racine du projet
+Vérifie que `icecream-standard.otf` et `ligurino bold.ttf` sont bien à la racine du projet
 
 ### "invite.png introuvable"
 Place l'image `invite.png` (1920x1080, transparent) à la racine
@@ -133,7 +133,7 @@ Crée un fichier `data.csv` avec tes données
 
 1. Copie tes lignes depuis Google Sheets
 2. Colle-les dans `data.csv` (sauvegarde)
-3. Lance `python script_generator.py`
+3. Lance `python png_generator.py`
 4. Récupère tes PNG dans `export_png/`
 
 **C'est tout !** 🎉

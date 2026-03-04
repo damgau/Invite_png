@@ -25,9 +25,9 @@ WHITE = (255, 255, 255, 255)
 PINK_FRAME = (255, 116, 162, 245)
 
 # Tailles de police
-FONT_SIZE_PNG1 = 66   # Prénom (icecream)
-FONT_SIZE_PNG2 = 60    # Thema (ligurino)
-FONT_SIZE_PNG3 = 73    # QQO (ligurino)
+FONT_SIZE_PNG1 = 70   # Prénom (icecream)
+FONT_SIZE_PNG2 = 57    # Thema (ligurino)
+FONT_SIZE_PNG3 = 72    # QQO (ligurino)
 
 # Marges et positions
 FRAME_MARGIN_X = 90  # Marge horizontale (gauche/droite) du cadre rose
@@ -40,20 +40,21 @@ MAX_WIDTH_QQO = 1700  # Largeur maximale avant passage en 2 lignes
 
 # Positions Y pour PNG 3 (alignées avec les labels Quoi/Quand/Où/Infos)
 Y_POSITIONS = {
-    'quoi': {'1_ligne': 349, '2_lignes': 300},
-    'quand': {'1_ligne': 543, '2_lignes': 493},
-    'ou': {'1_ligne': 748, '2_lignes': 693},
-    'contact': {'1_ligne': 940, '2_lignes': 879}
+    'quoi': {'1_ligne': 339, '2_lignes': 294},
+    'quand': {'1_ligne': 529, '2_lignes': 484},
+    'ou': {'1_ligne': 728, '2_lignes': 683},
+    'contact': {'1_ligne': 915, '2_lignes': 870}
 }
 
 # Position pour PNG 2 (thema)
-Y_QUOI_THEMA = 967
+Y_QUOI_THEMA = 961
 X_ALIGN_RIGHT_THEMA = 1824
 
-# Effets pour PNG 3
-TRACKING = 40  # Espacement entre les caractères (comme Photoshop tracking)
-SHADOW_OPACITY = 0.80  # %
-SHADOW_BLUR_SIZE = 10
+# Effets pour PNG 3 (drop shadow Photoshop)
+SHADOW_OPACITY = 0.85  # 85%
+SHADOW_ANGLE = 84  # Degrés
+SHADOW_DISTANCE = 5  # px
+SHADOW_BLUR_SIZE = 13  # px
 
 
 def sanitize_filename(name):
@@ -67,51 +68,17 @@ def sanitize_filename(name):
     return name
 
 
-def get_text_width_with_tracking(text, font, tracking):
+def create_shadow_layer(text, font, position, blur_size, opacity, angle, distance):
     """
-    Calcule la largeur du texte avec tracking
-    Le tracking dans Photoshop est en millièmes d'em (1000 = 1em)
+    Crée une couche d'ombre avec flou, opacité, angle et distance
     """
-    draw = ImageDraw.Draw(Image.new('RGBA', (1, 1)))
+    import math
     
-    # Largeur de base sans tracking
-    bbox = draw.textbbox((0, 0), text, font=font)
-    base_width = bbox[2] - bbox[0]
+    # Calculer l'offset de l'ombre basé sur l'angle et la distance
+    angle_rad = math.radians(angle)
+    offset_x = distance * math.cos(angle_rad)
+    offset_y = distance * math.sin(angle_rad)
     
-    # Ajouter le tracking entre les caractères
-    # tracking = 40 signifie 40/1000 de la taille de la police
-    font_size = font.size
-    tracking_px = (tracking / 1000) * font_size
-    
-    # Nombre d'espaces entre caractères (n-1 pour n caractères)
-    num_gaps = len(text) - 1
-    total_tracking = tracking_px * num_gaps
-    
-    return base_width + total_tracking
-
-
-def draw_text_with_tracking(draw, position, text, font, fill, tracking):
-    """
-    Dessine du texte avec tracking (espacement entre caractères)
-    """
-    x, y = position
-    font_size = font.size
-    tracking_px = (tracking / 1000) * font_size
-    
-    current_x = x
-    for char in text:
-        draw.text((current_x, y), char, font=font, fill=fill)
-        # Mesurer la largeur du caractère
-        bbox = draw.textbbox((0, 0), char, font=font)
-        char_width = bbox[2] - bbox[0]
-        # Avancer avec le tracking
-        current_x += char_width + tracking_px
-
-
-def create_shadow_layer(text, font, position, tracking, blur_size, opacity):
-    """
-    Crée une couche d'ombre avec flou et opacité
-    """
     # Créer une image temporaire pour l'ombre
     shadow_img = Image.new('RGBA', (WIDTH, HEIGHT), (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow_img)
@@ -120,8 +87,12 @@ def create_shadow_layer(text, font, position, tracking, blur_size, opacity):
     shadow_alpha = int(255 * opacity)
     shadow_color = (0, 0, 0, shadow_alpha)
     
-    # Dessiner le texte avec tracking pour l'ombre
-    draw_text_with_tracking(shadow_draw, position, text, font, shadow_color, tracking)
+    # Position de l'ombre avec offset
+    shadow_x = position[0] + offset_x
+    shadow_y = position[1] + offset_y
+    
+    # Dessiner le texte de l'ombre
+    shadow_draw.text((shadow_x, shadow_y), text, font=font, fill=shadow_color)
     
     # Appliquer le flou gaussien
     shadow_img = shadow_img.filter(ImageFilter.GaussianBlur(radius=blur_size))
@@ -129,7 +100,7 @@ def create_shadow_layer(text, font, position, tracking, blur_size, opacity):
     return shadow_img
 
 
-def split_text_if_needed(text, font, max_width, tracking):
+def split_text_if_needed(text, font, max_width):
     """
     Divise le texte en 2 lignes si nécessaire
     Retourne (lignes, is_2_lignes)
@@ -142,8 +113,10 @@ def split_text_if_needed(text, font, max_width, tracking):
         parts = text.split('|', 1)  # Couper au premier pipe seulement
         return [parts[0].strip(), parts[1].strip()], True
     
-    # Mesurer le texte avec tracking
-    text_width = get_text_width_with_tracking(text, font, tracking)
+    # Mesurer le texte
+    draw = ImageDraw.Draw(Image.new('RGBA', (1, 1)))
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
     
     if text_width <= max_width:
         return [text], False
@@ -253,15 +226,15 @@ def create_png_2_thema(quoi, nom, output_path):
     # Charger la police
     font = ImageFont.truetype(FONT_LIGURINO, FONT_SIZE_PNG2)
     
-    # Mesurer le texte
-    bbox = draw.textbbox((0, 0), quoi, font=font)
+    # PNG thema: toujours sur une seule ligne, sans pipe "|"
+    quoi_clean = quoi.replace('|', ' ').strip()
+
+    # Mesurer le texte final pour un alignement droit stable
+    bbox = draw.textbbox((0, 0), quoi_clean, font=font)
     text_width = bbox[2] - bbox[0]
-    
-    # Position X (aligné à droite)
     text_x = X_ALIGN_RIGHT_THEMA - text_width
-    
-    # Dessiner le texte
-    quoi_clean = quoi.replace('|', '').strip()
+
+    # Dessiner le texte en une seule ligne
     draw.text((text_x, Y_QUOI_THEMA), quoi_clean, font=font, fill=WHITE)
     
     img.save(output_path)
@@ -289,27 +262,27 @@ def create_png_3_qqo(quoi, ou, quand, contact, nom, output_path):
     
     # Traiter chaque champ
     for key, text in data.items():
-        lines, is_2_lignes = split_text_if_needed(text, font, MAX_WIDTH_QQO, TRACKING)
+        lines, is_2_lignes = split_text_if_needed(text, font, MAX_WIDTH_QQO)
         
         if is_2_lignes:
             y_pos = Y_POSITIONS[key]['2_lignes']
         else:
             y_pos = Y_POSITIONS[key]['1_ligne']
         
-        # Dessiner chaque ligne avec ombre et tracking
+        # Dessiner chaque ligne avec ombre
         for i, line in enumerate(lines):
             current_y = y_pos + i * 70
             position = (X_POSITION_QQO, current_y)
             
             # Créer et appliquer l'ombre
-            shadow = create_shadow_layer(line, font, position, TRACKING, SHADOW_BLUR_SIZE, SHADOW_OPACITY)
+            shadow = create_shadow_layer(line, font, position, SHADOW_BLUR_SIZE, SHADOW_OPACITY, SHADOW_ANGLE, SHADOW_DISTANCE)
             img = Image.alpha_composite(img, shadow)
             
             # IMPORTANT: Recréer draw après alpha_composite
             draw = ImageDraw.Draw(img)
             
-            # Dessiner le texte avec tracking
-            draw_text_with_tracking(draw, position, line, font, WHITE, TRACKING)
+            # Dessiner le texte
+            draw.text(position, line, font=font, fill=WHITE)
     
     img.save(output_path)
     print(f"✓ Créé : {output_path}")
@@ -390,12 +363,18 @@ if __name__ == "__main__":
         print("Installez-le avec : pip install Pillow")
         exit(1)
     
-    # Vérifier les polices
-    if not os.path.exists(FONT_ICE_CREAM):
-        print(f"⚠ Police manquante : {FONT_ICE_CREAM}")
-    
-    if not os.path.exists(FONT_LIGURINO):
-        print(f"⚠ Police manquante : {FONT_LIGURINO}")
+    # Vérifier les ressources critiques (fail-fast)
+    missing_resources = []
+
+    for resource in [FONT_ICE_CREAM, FONT_LIGURINO, INVITE_PNG]:
+        if not os.path.exists(resource):
+            missing_resources.append(resource)
+
+    if missing_resources:
+        print("⚠ Ressources manquantes :")
+        for resource in missing_resources:
+            print(f"  - {resource}")
+        exit(1)
     
     # Lancer le traitement
     process_csv()
