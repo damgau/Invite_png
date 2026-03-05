@@ -59,8 +59,11 @@ echo.
 
 REM Install/upgrade dependencies
 echo [4/5] Installation des dependances...
-python -m pip install --upgrade pip --quiet
-pip install -r requirements.txt --quiet
+python -m pip install --upgrade pip setuptools wheel --quiet
+if errorlevel 1 (
+    echo [AVERTISSEMENT] Impossible de mettre a jour pip/setuptools/wheel, continuation...
+)
+pip install Pillow --only-binary :all: --quiet
 if errorlevel 1 (
     echo [ERREUR] Impossible d'installer les dependances.
     pause
