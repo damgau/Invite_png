@@ -25,13 +25,13 @@ WIDTH = 1920
 HEIGHT = 1080
 
 # Couleurs
-WHITE = (255, 255, 255, 255)
-PINK_FRAME = (255, 116, 162, 245)
+WHITE = (251, 251, 251, 255)
+PINK_FRAME = (255, 116, 162, 243)
 
 # Tailles de police
 FONT_SIZE_PNG1 = 70   # Prénom (icecream)
 FONT_SIZE_PNG2 = 57    # Thema (ligurino)
-FONT_SIZE_PNG3 = 73    # QQO (ligurino)
+FONT_SIZE_PNG3 = 74    # QQO (ligurino)
 
 # Marges et positions
 FRAME_MARGIN_X = 90  # Marge horizontale (gauche/droite) du cadre rose
@@ -44,9 +44,9 @@ MAX_WIDTH_QQO = 1700  # Largeur maximale avant passage en 2 lignes
 
 # Positions Y pour PNG 3 (alignées avec les labels Quoi/Quand/Où/Infos)
 Y_POSITIONS = {
-    'quoi': {'1_ligne': 350, '2_lignes': 309},
+    'quoi': {'1_ligne': 350, '2_lignes': 302},
     'quand': {'1_ligne': 535, '2_lignes': 495},
-    'ou': {'1_ligne': 736, '2_lignes': 692},
+    'ou': {'1_ligne': 736, '2_lignes': 690},
     'contact': {'1_ligne': 924, '2_lignes': 883}
 }
 
