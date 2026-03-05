@@ -31,7 +31,7 @@ PINK_FRAME = (255, 116, 162, 243)
 # Tailles de police
 FONT_SIZE_PNG1 = 70   # Prénom (icecream)
 FONT_SIZE_PNG2 = 57    # Thema (ligurino)
-FONT_SIZE_PNG3 = 74    # QQO (ligurino)
+FONT_SIZE_PNG3 = 77    # QQO (ligurino)
 
 # Marges et positions
 FRAME_MARGIN_X = 90  # Marge horizontale (gauche/droite) du cadre rose
@@ -55,10 +55,10 @@ Y_QUOI_THEMA = 971
 X_ALIGN_RIGHT_THEMA = 1824
 
 # Effets pour PNG 3 (drop shadow Photoshop)
-SHADOW_OPACITY = 0.85  # 85%
+SHADOW_OPACITY = 0.90  # 85%
 SHADOW_ANGLE = 84  # Degrés
-SHADOW_DISTANCE = 5  # px
-SHADOW_BLUR_SIZE = 13  # px
+SHADOW_DISTANCE = 2  # px
+SHADOW_BLUR_SIZE = 5  # px
 
 
 def sanitize_filename(name):
@@ -237,9 +237,18 @@ def create_png_2_thema(quoi, nom, output_path):
     bbox = draw.textbbox((0, 0), quoi_clean, font=font)
     text_width = bbox[2] - bbox[0]
     text_x = X_ALIGN_RIGHT_THEMA - text_width
+    
+    position = (text_x, Y_QUOI_THEMA)
+    
+    # Créer et appliquer l'ombre (drop shadow Photoshop)
+    shadow = create_shadow_layer(quoi_clean, font, position, SHADOW_BLUR_SIZE, SHADOW_OPACITY, SHADOW_ANGLE, SHADOW_DISTANCE)
+    img = Image.alpha_composite(img, shadow)
+    
+    # Recréer draw après alpha_composite
+    draw = ImageDraw.Draw(img)
 
     # Dessiner le texte en une seule ligne
-    draw.text((text_x, Y_QUOI_THEMA), quoi_clean, font=font, fill=WHITE)
+    draw.text(position, quoi_clean, font=font, fill=WHITE)
     
     img.save(output_path)
     print(f"✓ Créé : {output_path}")
