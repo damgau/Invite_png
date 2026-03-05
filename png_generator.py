@@ -192,7 +192,7 @@ def create_png_1_prenom(nom, output_path):
     
     # Cadre à 66% : marge horizontale 59px (66% de 90), hauteur 100px (66% de 152)
     frame_margin_x = 59
-    frame_height = 100
+    frame_height = 82
     frame_width = text_width + 2 * frame_margin_x
     frame_x = (WIDTH - frame_width) // 2
     
