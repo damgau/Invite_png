@@ -6,7 +6,10 @@ Script Python automatisant la création de 3 PNG par événement à partir d'un 
 
 ```
 projet/
+├── run_windows.bat        # 🚀 DOUBLE-CLIQUE ICI (Windows)
+├── run_mac.sh             # 🚀 DOUBLE-CLIQUE ICI (macOS/Linux)
 ├── png_generator.py       # Script principal
+├── requirements.txt       # Dépendances Python
 ├── icecream-standard.otf  # Police pour les noms
 ├── ligurino bold.ttf      # Police pour les infos
 ├── invite.png             # Image de fond 1920x1080 (transparent)
@@ -14,21 +17,69 @@ projet/
 └── export_png/            # Dossier de sortie (créé automatiquement)
 ```
 
-## 🚀 Installation
+## 🚀 Installation & Utilisation Rapide
 
-### 1. Installer Python 3
-Si ce n'est pas déjà fait, télécharge Python depuis [python.org](https://www.python.org/downloads/)
+### ⚡ Méthode ONE-CLICK (Recommandée)
 
-### 2. Installer Pillow
-Ouvre un terminal et exécute :
+#### Windows
+1. **Télécharge Python** depuis [python.org](https://www.python.org/downloads/)
+   - ⚠️ **IMPORTANT** : Coche "Add Python to PATH" lors de l'installation !
+2. **Télécharge ce projet** (ZIP ou Git clone)
+3. **Prépare tes fichiers** :
+   - Place les polices `icecream-standard.otf` et `ligurino bold.ttf` à la racine
+   - Place `invite.png` (1920x1080, transparent) à la racine
+   - Crée ton fichier `data.csv`
+4. **Double-clique sur `run_windows.bat`** 🎉
+
+Le script s'occupe de tout :
+- ✅ Création automatique de l'environnement virtuel
+- ✅ Installation des dépendances (Pillow)
+- ✅ Génération de tes PNG
+- ✅ Ouverture du dossier de résultats
+
+#### macOS / Linux
+1. **Télécharge Python 3** (déjà installé sur macOS récent)
+2. **Télécharge ce projet** (ZIP ou Git clone)
+3. **Prépare tes fichiers** (polices, invite.png, data.csv)
+4. **Double-clique sur `run_mac.sh`** 🎉
+   - Si ça ne marche pas, ouvre un terminal et exécute : `chmod +x run_mac.sh && ./run_mac.sh`
+
+### 🛠️ Méthode Manuelle (Avancée)
+
+Si tu préfères installer manuellement :
+
+#### 1. Installer Python 3
+Télécharge Python depuis [python.org](https://www.python.org/downloads/)
+
+#### 2. Créer un environnement virtuel (optionnel mais recommandé)
 ```bash
-pip install Pillow
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+
+# macOS/Linux
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-### 3. Préparer les fichiers
+#### 3. Installer les dépendances
+```bash
+pip install -r requirements.txt
+```
+
+#### 4. Préparer les fichiers
 - Place les polices `icecream-standard.otf` et `ligurino bold.ttf` à la racine
 - Place `invite.png` (1920x1080, transparent) à la racine
 - Crée ton fichier `data.csv`
+
+#### 5. Lancer le script
+```bash
+# Windows
+python png_generator.py
+
+# macOS/Linux
+python3 png_generator.py
+```
 
 ## 📝 Format du CSV
 
@@ -57,21 +108,6 @@ Courses de caisses à savon|5ème édition
 **Raccourci clavier sur Mac** : `Option + Shift + L` (AZERTY) ou `Option + 7` (QWERTY)
 
 Si aucun pipe n'est présent, le script détecte automatiquement si le texte doit passer en 2 lignes (pour le PNG 3 / QQO).
-
-## ▶️ Utilisation
-
-### Méthode 1 : Double-clic (Windows)
-Double-clique sur `png_generator.py`
-
-### Méthode 2 : Terminal
-```bash
-python png_generator.py
-```
-
-### Méthode 3 : Ligne de commande (Linux/Mac)
-```bash
-python3 png_generator.py
-```
 
 ## 📤 Résultat
 
@@ -115,7 +151,30 @@ Pour chaque ligne du CSV, le script génère 3 PNG dans `export_png/` :
 
 ## ⚠️ Résolution des problèmes
 
+### Windows : "Python n'est pas reconnu..."
+Python n'est pas dans le PATH. Deux solutions :
+1. **Réinstalle Python** en cochant "Add Python to PATH"
+2. **Ajoute Python manuellement au PATH** :
+   - Cherche "Variables d'environnement" dans Windows
+   - Dans "Variables système", édite "Path"
+   - Ajoute le chemin d'installation de Python (ex: `C:\Users\TON_NOM\AppData\Local\Programs\Python\Python311\`)
+
+### Windows : Le fichier .bat ne fait rien
+- Vérifie que Python est installé
+- Fais clic droit sur `run_windows.bat` → "Exécuter en tant qu'administrateur"
+- Ouvre un terminal et exécute : `run_windows.bat` pour voir les messages d'erreur
+
+### macOS : "Permission denied" sur run_mac.sh
+```bash
+chmod +x run_mac.sh
+./run_mac.sh
+```
+
 ### "Pillow n'est pas installé"
+```bash
+pip install -r requirements.txt
+```
+Ou manuellement :
 ```bash
 pip install Pillow
 ```
@@ -129,11 +188,27 @@ Place l'image `invite.png` (1920x1080, transparent) à la racine
 ### "data.csv introuvable"
 Crée un fichier `data.csv` avec tes données
 
+### Les accents ne s'affichent pas correctement
+Le fichier CSV doit être encodé en UTF-8. Dans Excel/LibreOffice, choisis "UTF-8" lors de la sauvegarde.
+
 ## 📋 Exemple complet
 
+### Workflow rapide (Windows) :
+1. Copie tes lignes depuis Google Sheets
+2. Colle-les dans `data.csv` (sauvegarde avec CTRL+S)
+3. **Double-clique sur `run_windows.bat`** 🚀
+4. Récupère tes PNG dans `export_png/`
+
+### Workflow rapide (macOS/Linux) :
+1. Copie tes lignes depuis Google Sheets
+2. Colle-les dans `data.csv` (sauvegarde avec CMD+S)
+3. **Double-clique sur `run_mac.sh`** 🚀
+4. Récupère tes PNG dans `export_png/`
+
+### Workflow manuel :
 1. Copie tes lignes depuis Google Sheets
 2. Colle-les dans `data.csv` (sauvegarde)
-3. Lance `python png_generator.py`
+3. Lance `python png_generator.py` (ou `python3 png_generator.py`)
 4. Récupère tes PNG dans `export_png/`
 
 **C'est tout !** 🎉

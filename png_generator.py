@@ -7,14 +7,18 @@ Génère 3 PNG par ligne du CSV : prenom.png, prenom_thema.png, prenom_QQO.png
 
 import os
 import csv
+from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-# Configuration
-CSV_FILE = "data.csv"
-OUTPUT_DIR = "export_png"
-INVITE_PNG = "invite.png"
-FONT_ICE_CREAM = "icecream-standard.otf"
-FONT_LIGURINO = "ligurino bold.ttf"
+# Get script directory for relative paths (cross-platform compatibility)
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+# Configuration (all paths relative to script directory)
+CSV_FILE = SCRIPT_DIR / "data.csv"
+OUTPUT_DIR = SCRIPT_DIR / "export_png"
+INVITE_PNG = SCRIPT_DIR / "invite.png"
+FONT_ICE_CREAM = SCRIPT_DIR / "icecream-standard.otf"
+FONT_LIGURINO = SCRIPT_DIR / "ligurino bold.ttf"
 
 # Dimensions
 WIDTH = 1920
@@ -180,7 +184,7 @@ def create_png_1_prenom(nom, output_path):
     draw = ImageDraw.Draw(img)
     
     # Police à 66% (66% de 100)
-    font = ImageFont.truetype(FONT_ICE_CREAM, FONT_SIZE_PNG1)
+    font = ImageFont.truetype(str(FONT_ICE_CREAM), FONT_SIZE_PNG1)
     
     bbox = draw.textbbox((0, 0), nom, font=font)
     text_width = bbox[2] - bbox[0]
@@ -211,11 +215,11 @@ def create_png_2_thema(quoi, nom, output_path):
     Logo invite.png + quoi en bas à droite
     """
     # Charger l'image de fond
-    if not os.path.exists(INVITE_PNG):
+    if not INVITE_PNG.exists():
         print(f"⚠ Erreur : {INVITE_PNG} introuvable")
         return
     
-    img = Image.open(INVITE_PNG).convert('RGBA')
+    img = Image.open(str(INVITE_PNG)).convert('RGBA')
     
     # Vérifier les dimensions
     if img.size != (WIDTH, HEIGHT):
@@ -224,7 +228,7 @@ def create_png_2_thema(quoi, nom, output_path):
     draw = ImageDraw.Draw(img)
     
     # Charger la police
-    font = ImageFont.truetype(FONT_LIGURINO, FONT_SIZE_PNG2)
+    font = ImageFont.truetype(str(FONT_LIGURINO), FONT_SIZE_PNG2)
     
     # PNG thema: toujours sur une seule ligne, sans pipe "|"
     quoi_clean = quoi.replace('|', ' ').strip()
@@ -250,7 +254,7 @@ def create_png_3_qqo(quoi, ou, quand, contact, nom, output_path):
     img = Image.new('RGBA', (WIDTH, HEIGHT), (0, 0, 0, 0))
     
     # Charger la police
-    font = ImageFont.truetype(FONT_LIGURINO, FONT_SIZE_PNG3)
+    font = ImageFont.truetype(str(FONT_LIGURINO), FONT_SIZE_PNG3)
     
     # Données à afficher
     data = {
@@ -293,15 +297,15 @@ def process_csv():
     Lit le CSV et génère tous les PNG
     """
     # Créer le dossier de sortie
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     
-    if not os.path.exists(CSV_FILE):
-        print(f"⚠ Erreur : {CSV_FILE} introuvable")
-        print(f"Créez un fichier {CSV_FILE} avec vos données.")
+    if not CSV_FILE.exists():
+        print(f"⚠ Erreur : {CSV_FILE.name} introuvable")
+        print(f"Créez un fichier {CSV_FILE.name} avec vos données.")
         return
     
     # Lire le CSV (avec tabulations comme séparateur)
-    with open(CSV_FILE, 'r', encoding='utf-8') as f:
+    with open(str(CSV_FILE), 'r', encoding='utf-8') as f:
         # Détecter le séparateur (tab ou virgule)
         sample = f.read(1024)
         f.seek(0)
@@ -327,13 +331,13 @@ def process_csv():
             # Générer les 3 PNG
             create_png_1_prenom(
                 nom, 
-                os.path.join(OUTPUT_DIR, f"{clean_name}.png")
+                str(OUTPUT_DIR / f"{clean_name}.png")
             )
             
             create_png_2_thema(
                 quoi, 
                 nom,
-                os.path.join(OUTPUT_DIR, f"{clean_name}_thema.png")
+                str(OUTPUT_DIR / f"{clean_name}_thema.png")
             )
             
             create_png_3_qqo(
@@ -342,12 +346,12 @@ def process_csv():
                 quand, 
                 contact, 
                 nom,
-                os.path.join(OUTPUT_DIR, f"{clean_name}_QQO.png")
+                str(OUTPUT_DIR / f"{clean_name}_QQO.png")
             )
             
             count += 1
         
-        print(f"\n✅ Terminé ! {count * 3} PNG générés dans {OUTPUT_DIR}/")
+        print(f"\n✅ Terminé ! {count * 3} PNG générés dans {OUTPUT_DIR.name}/")
 
 
 if __name__ == "__main__":
@@ -367,8 +371,8 @@ if __name__ == "__main__":
     missing_resources = []
 
     for resource in [FONT_ICE_CREAM, FONT_LIGURINO, INVITE_PNG]:
-        if not os.path.exists(resource):
-            missing_resources.append(resource)
+        if not resource.exists():
+            missing_resources.append(resource.name)
 
     if missing_resources:
         print("⚠ Ressources manquantes :")
