@@ -27,12 +27,12 @@ PINK_FRAME = (255, 116, 162, 245)
 # Tailles de police
 FONT_SIZE_PNG1 = 70   # Prénom (icecream)
 FONT_SIZE_PNG2 = 57    # Thema (ligurino)
-FONT_SIZE_PNG3 = 72    # QQO (ligurino)
+FONT_SIZE_PNG3 = 73    # QQO (ligurino)
 
 # Marges et positions
 FRAME_MARGIN_X = 90  # Marge horizontale (gauche/droite) du cadre rose
 FRAME_MARGIN_Y = 0   # Marge verticale (haut/bas) du cadre rose
-FRAME_Y = 844  # Position Y du cadre rose
+FRAME_Y = 890  # Position Y du cadre rose
 
 # Positions pour PNG 3 (QQO)
 X_POSITION_QQO = 583
@@ -47,7 +47,7 @@ Y_POSITIONS = {
 }
 
 # Position pour PNG 2 (thema)
-Y_QUOI_THEMA = 961
+Y_QUOI_THEMA = 971
 X_ALIGN_RIGHT_THEMA = 1824
 
 # Effets pour PNG 3 (drop shadow Photoshop)
