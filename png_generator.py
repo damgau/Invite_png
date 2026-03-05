@@ -44,10 +44,10 @@ MAX_WIDTH_QQO = 1700  # Largeur maximale avant passage en 2 lignes
 
 # Positions Y pour PNG 3 (alignées avec les labels Quoi/Quand/Où/Infos)
 Y_POSITIONS = {
-    'quoi': {'1_ligne': 339, '2_lignes': 294},
-    'quand': {'1_ligne': 529, '2_lignes': 484},
-    'ou': {'1_ligne': 728, '2_lignes': 683},
-    'contact': {'1_ligne': 915, '2_lignes': 870}
+    'quoi': {'1_ligne': 350, '2_lignes': 309},
+    'quand': {'1_ligne': 535, '2_lignes': 495},
+    'ou': {'1_ligne': 736, '2_lignes': 692},
+    'contact': {'1_ligne': 924, '2_lignes': 883}
 }
 
 # Position pour PNG 2 (thema)
