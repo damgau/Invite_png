@@ -1,119 +1,138 @@
-# Project Guidelines: Football Standings Web Scraper
+# Project Guidelines: PNG Event Generator
 
 ## Overview
 
-Web scraper for Belgian football standings and results that scrapes from **lavenir.net**, transforms HTML data into CSV files, and generates PNG images with team standings and match results. The project follows Clean Architecture with three processing layers.
+Python script that automatically generates 3 PNG images per event from CSV data:
+1. **Name PNG** (`prenom.png`) - Name in pink frame
+2. **Theme PNG** (`prenom_thema.png`) - Background with event description
+3. **Info PNG** (`prenom_QQO.png`) - Complete event details (What/When/Where/Contact)
 
 ## Architecture
 
-### Three-Layer Processing Pipeline
+### Single-Layer Processing
 
-1. **Scraper Layer** (`src/scraper.py`)
-   - Selenium-based web scraper with headless Chrome
-   - Handles navigation, date selection, and page waits
-   - Respects rate limiting with configurable `cooldown_seconds` (default: 3s)
-   - Returns raw HTML content
+1. **CSV Parser** (`png_generator.py`)
+   - Reads tab-separated CSV ([`data.csv`](data.csv))
+   - Processes each row to extract event data
+   - Validates required fields (7 columns minimum)
 
-2. **Parser Layer** (`src/parse.py`)
-   - Extracts structured data from HTML using BeautifulSoup
-   - Creates pandas DataFrames for standings and match results
-   - Saves CSV files to `data/raw/classements/` and `data/raw/resultats/`
-   - Handles team name normalization via `team_renames.json`
-
-3. **Generator Layer** (`src/generate_png.py`)
-   - Reads verified CSV files from `data/verified/`
-   - Uses Pillow to create PNG images with configured styling
-   - Saves output to `data/png/`
-   - Loads team abbreviations and colors from JSON config
+2. **PNG Generator** (`png_generator.py`)
+   - Uses Pillow for image creation (1920x1080 RGBA)
+   - Applies custom fonts, colors, and text effects
+   - Saves output to `export_png/`
 
 ### Data Flow
 
 ```
-config.json → Scraper (Selenium) → parse_matches()/parse_classement() 
-→ CSV (raw/) → Manual verification → CSV (verified/) → PNG Generator → PNG output
+data.csv → CSV Parser → PNG Generator (Pillow) → export_png/*.png
 ```
 
 ## Code Style
 
-- **Type hints**: Not currently used; PRs welcome to add them incrementally
-- **Logging**: Use `logging` module; log at INFO level for progress, DEBUG for troubleshooting
-- **Naming**: snake_case for functions, UPPER_SNAKE_CASE for constants (e.g., `ELEMENT_WAIT_TIMEOUT`)
-- **String formatting**: Use f-strings for config values (see `config.json` loading in `scraper.py`)
-- **Path handling**: Use `pathlib.Path` for all file operations (see `scraper.py` line 24-25)
+- **Type hints**: Not currently used
+- **Encoding**: UTF-8 with `# -*- coding: utf-8 -*-`
+- **Naming**: snake_case for functions, UPPER_SNAKE_CASE for constants
+- **String formatting**: Use f-strings for all string interpolation
+- **Path handling**: Use `pathlib.Path` for all file operations (cross-platform compatibility)
+- **Comments**: French comments and docstrings (user-facing)
 
-Example from `parse.py`:
+Example from [`png_generator.py`](png_generator.py):
 ```python
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = PROJECT_ROOT / "data" / "raw"
-logger.info(f"Saving classement to {OUTPUT_FILE}")
+SCRIPT_DIR = Path(__file__).resolve().parent
+CSV_FILE = SCRIPT_DIR / "data.csv"
+OUTPUT_DIR = SCRIPT_DIR / "export_png"
 ```
 
 ## Project Conventions
 
-### Configuration Structure
-
-`config.json` defines:
-- **Series**: National (D1, D2, D3A) and Provincial (Namur: P1, P2A, P2B, P3C)
-- **Titles**: Display names for each series (used in PNG generation)
-- **Base URL & paths**: Specific web paths for each series on laverin.net
-- **Scraper settings**: `cooldown_seconds` (respect rate limits), `user_agent`
-
-### Team Name Normalization
-
-`team_renames.json` maps scraped team names to standardized team names for consistent CSV/PNG output. Update when scraper encounters new team name variations.
-
 ### CSV File Format
 
-**Standings** (`classements/`):
-- Columns: position, team_name, matches_played, wins, draws, losses, goals_for, goals_against, points
+Tab-separated values (TSV) with 7 columns:
 
-**Results** (`resultats/`):
-- Columns: date_match, time_match, team1, score, team2
+```
+QUOI    QUAND    OÙ    NOM    HEURE    DATE_SOURCE    CONTACT
+```
 
-Files are processed from `data/raw/` → manually verified → `data/verified/` before PNG generation.
+- **Pipe delimiter (`|`)**: Forces line break in multi-line text
+- **Encoding**: UTF-8 (required for French accents)
+- **Separator**: Tab character (`\t`) or comma (auto-detected)
+
+See [`data.csv`](data.csv) for examples.
+
+### Font Configuration
+
+- **Name PNG**: [`icecream-standard.otf`](icecream-standard.otf) at 70px (66% scale)
+- **Theme/Info PNG**: [`ligurino bold.ttf`](ligurino bold.ttf) at 57px/77px
+- Fonts must be at project root
+
+### Image Specifications
+
+**Dimensions**: 1920x1080 RGBA  
+**Background**: [`invite.png`](invite.png) (transparent, 1920x1080)  
+**Colors**:
+- White text: RGB(251, 251, 251, 255)
+- Pink frame: RGB(255, 116, 162, 243)
+
+**Text Effects** (Info PNG):
+- Drop shadow: 90% opacity, 84° angle, 2px distance, 5px blur
+
+### Output Files
+
+For each CSV row with name "John Doe":
+- `John_Doe.png` - Name in pink frame
+- `John_Doe_thema.png` - Event theme with background
+- `John_Doe_QQO.png` - Full event details
 
 ## Build and Test
 
 ```bash
-# Setup environment
-python3.11 -m venv venv
-source venv/bin/activate  # macOS/Linux or venv\Scripts\activate on Windows
+# Quick start (Windows)
+run_windows.bat
 
-# Install dependencies
+# Quick start (macOS/Linux)
+./run_mac.sh
+
+# Manual setup
+python3 -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate     # Windows
+
 pip install -r requirements.txt
-
-# Run scraper + parser pipeline
-python src/main.py         # Scrapes standings and results to data/raw/
-
-# Generate PNG images
-python src/generate_png.py # Reads from data/verified/ and outputs to data/png/
+python png_generator.py
 ```
 
 ## Integration Points
 
 ### External Dependencies
 
-- **Selenium** (`selenium==4.18.1`): Browser automation with Chrome (headless)
-- **BeautifulSoup** (`beautifulsoup4==4.12.2`): HTML parsing
-- **Pandas** (`pandas==2.1.4`): DataFrame handling for CSVs
-- **Pillow** (`Pillow==10.2.0`): Image generation and text rendering
-- **webdriver-manager** (`webdriver-manager==4.0.1`): Automatic ChromeDriver management
+- **Pillow** (`Pillow==10.2.0`): Image generation, fonts, effects
 
-### Selenium Waits
+### Launcher Scripts
 
-- `ELEMENT_WAIT_TIMEOUT = 10`: Finding elements on page
-- `PAGE_LOAD_TIMEOUT = 30`: Page load completion
-- `DATA_REFRESH_WAIT = 5`: Data refresh after date selection
+- **Windows**: [`run_windows.bat`](run_windows.bat) - Auto-setup with venv
+- **macOS/Linux**: [`run_mac.sh`](run_mac.sh) - Auto-setup with venv
 
-See `src/scraper.py` lines 30-32 for timeout usage with WebDriverWait.
+Both scripts handle:
+1. Python installation check
+2. Virtual environment creation
+3. Dependency installation
+4. PNG generation
+5. Opening output folder
 
-### Font Paths
+### Font Loading
 
-PNG generator uses system fonts; currently hardcoded to `/Library/Fonts/entsans.ttf`. May need adjustment on different systems—see `src/generate_png.py` lines 38-48.
+Fonts are loaded with absolute paths via `pathlib.Path`:
 
-## Scraper Politeness
+```python
+FONT_ICE_CREAM = SCRIPT_DIR / "icecream-standard.otf"
+font = ImageFont.truetype(str(FONT_ICE_CREAM), FONT_SIZE_PNG1)
+```
 
-- **Rate limiting**: `cooldown_seconds` enforced between requests (set to 3s by default)
-- **User-Agent**: Must be set in `config.json` for identification
-- Headless Chrome is used to minimize server load
-- No concurrent requests; sequential processing of series
+## User-Facing Messages
+
+All error messages and prompts are in **French**:
+- "⚠ Erreur : Python n'est pas installé"
+- "✓ Créé : export_png/John_Doe.png"
+- "✅ Terminé ! 6 PNG générés"
+
+Keep this convention for consistency with [`README.md`](README.md).

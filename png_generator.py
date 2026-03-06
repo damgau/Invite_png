@@ -332,6 +332,9 @@ def process_csv():
             
             quoi, quand, ou, nom, contact = row[0], row[1], row[2], row[3], row[6]
             
+            # Formater le nom (Prénom Nom)
+            nom = nom.strip().title()
+            
             # Nettoyer le nom pour les fichiers
             clean_name = sanitize_filename(nom)
             
