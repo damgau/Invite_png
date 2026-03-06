@@ -326,8 +326,10 @@ def process_csv():
         
         count = 0
         for row in reader:
+            # Vérifier si la ligne a assez de colonnes
             if len(row) < 7:
-                print(f"⚠ Ligne ignorée (pas assez de colonnes) : {row}")
+                if row and any(cell.strip() for cell in row):
+                    print(f"⚠ Ligne ignorée (pas assez de colonnes) : {row}")
                 continue
             
             quoi, quand, ou, nom, contact = row[0], row[1], row[2], row[3], row[6]
@@ -335,8 +337,23 @@ def process_csv():
             # Formater le nom (Prénom Nom)
             nom = nom.strip().title()
             
+            # Vérifier si le nom est vide
+            if not nom:
+                print(f"⚠ Ligne ignorée (nom vide)")
+                continue
+            
+            # Vérifier si les champs essentiels sont présents
+            if not quoi.strip() and not quand.strip() and not ou.strip():
+                print(f"⚠ Ligne ignorée pour '{nom}' (tous les champs sont vides)")
+                continue
+            
             # Nettoyer le nom pour les fichiers
             clean_name = sanitize_filename(nom)
+            
+            # Vérifier que le nom nettoyé n'est pas vide (sécurité supplémentaire)
+            if not clean_name:
+                print(f"⚠ Ligne ignorée (nom invalide pour créer un fichier)")
+                continue
             
             print(f"\n📝 Traitement : {nom}")
             
