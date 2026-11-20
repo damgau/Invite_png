@@ -7,6 +7,13 @@ Génère 3 PNG par ligne du CSV : prenom.png, prenom_thema.png, prenom_QQO.png
 
 import os
 import csv
+import re
+import socket
+import sys
+import http.client
+import urllib.error
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
@@ -59,6 +66,121 @@ SHADOW_OPACITY = 0.90  # 85%
 SHADOW_ANGLE = 84  # Degrés
 SHADOW_DISTANCE = 2  # px
 SHADOW_BLUR_SIZE = 5  # px
+
+# Vérification des URLs (avant la génération des PNG)
+URL_CHECK_TIMEOUT = 8  # secondes par tentative
+URL_CHECK_USER_AGENT = "Mozilla/5.0"  # Un User-Agent "Chrome" complet est refusé par Facebook (400)
+# Détecte : http(s)://..., www...., ou un domaine nu (ex: chateau-veves.be). Ignore les e-mails.
+URL_PATTERN = re.compile(
+    r'(?<![@\w.-])'
+    r'(?:https?://\S+'
+    r'|www\.\S+'
+    r'|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:be|com|fr|org|net|eu|info|lu|nl|de)\b(?:/\S*)?)'
+    r'(?![\w.-]*@)',
+    re.IGNORECASE
+)
+
+
+def extract_urls(text):
+    """Retourne la liste des URLs trouvées dans un texte (le pipe "|" est ignoré)"""
+    text = text.replace('|', ' ')
+    return [match.rstrip('.,;:!?)»"\'') for match in URL_PATTERN.findall(text)]
+
+
+def describe_url_error(error):
+    """Traduit une erreur réseau en message lisible"""
+    reason = getattr(error, 'reason', error)
+    if isinstance(reason, socket.gaierror):
+        return "domaine introuvable (faute de frappe ?)"
+    if isinstance(reason, (socket.timeout, TimeoutError)):
+        return "pas de réponse (délai dépassé)"
+    return f"inaccessible ({reason})"
+
+
+def check_url(url):
+    """
+    Vérifie qu'une URL répond.
+    Retourne (statut, message) avec statut = 'ok', 'avertissement' ou 'erreur'.
+    Sans http(s):// on essaie d'abord https://, puis http://.
+    """
+    if url.lower().startswith(('http://', 'https://')):
+        candidates = [url]
+    else:
+        candidates = [f"https://{url}", f"http://{url}"]
+
+    last_error = None
+    for candidate in candidates:
+        request = urllib.request.Request(candidate, headers={'User-Agent': URL_CHECK_USER_AGENT})
+        try:
+            with urllib.request.urlopen(request, timeout=URL_CHECK_TIMEOUT) as response:
+                # Le site répond, mais seulement en http:// (https absent, invalide
+                # ou redirigé vers http) : Chrome affiche un avertissement au visiteur
+                if response.geturl().lower().startswith('http://'):
+                    return 'avertissement', "site non sécurisé (pas de HTTPS) : le navigateur affichera un avertissement"
+                return 'ok', f"OK ({response.status})"
+        except urllib.error.HTTPError as e:
+            # Le serveur répond : le site existe mais refuse peut-être les robots
+            if e.code in (401, 403, 405, 429):
+                return 'ok', f"OK (site existant, accès restreint : {e.code})"
+            if e.code == 404:
+                return 'erreur', "page introuvable (404)"
+            return 'erreur', f"le serveur répond avec l'erreur {e.code}"
+        except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as e:
+            last_error = e
+            # Domaine inexistant : inutile de réessayer en http://
+            if isinstance(getattr(e, 'reason', None), socket.gaierror):
+                break
+
+    return 'erreur', describe_url_error(last_error)
+
+
+def verify_urls(events):
+    """
+    Vérifie toutes les URLs du CSV avant la génération.
+    Retourne True si la génération peut continuer.
+    """
+    # URL -> noms des événements qui l'utilisent
+    urls = {}
+    for event in events:
+        for field in ('quoi', 'quand', 'ou', 'contact'):
+            for url in extract_urls(event[field]):
+                urls.setdefault(url, []).append(event['nom'])
+
+    if not urls:
+        print("\n🔗 Aucune URL à vérifier.")
+        return True
+
+    print(f"\n🔗 Vérification de {len(urls)} URL(s)...")
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = dict(zip(urls, executor.map(check_url, urls)))
+
+    icons = {'ok': '✓', 'avertissement': '⚠', 'erreur': '✗'}
+    errors = 0
+    warnings = 0
+    for url, (status, message) in results.items():
+        if status == 'ok':
+            print(f"  ✓ {url} : {message}")
+            continue
+        noms = ', '.join(urls[url])
+        print(f"  {icons[status]} {url} : {message}  →  {noms}")
+        if status == 'erreur':
+            errors += 1
+        else:
+            warnings += 1
+
+    if not errors and not warnings:
+        return True
+
+    print()
+    if errors:
+        print(f"✗ {errors} URL(s) en erreur. Vérifiez l'orthographe dans {CSV_FILE.name} (et votre connexion internet).")
+    if warnings:
+        print(f"⚠ {warnings} URL(s) non sécurisée(s) : le site fonctionne, mais le visiteur verra un avertissement de sécurité.")
+    try:
+        answer = input("Continuer quand même la génération ? (O/N) : ")
+    except EOFError:
+        answer = ''
+    return answer.strip().lower() == 'o'
 
 
 def sanitize_filename(name):
@@ -301,18 +423,12 @@ def create_png_3_qqo(quoi, ou, quand, contact, nom, output_path):
     print(f"✓ Créé : {output_path}")
 
 
-def process_csv():
+def read_events():
     """
-    Lit le CSV et génère tous les PNG
+    Lit le CSV et retourne la liste des événements valides
     """
-    # Créer le dossier de sortie
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    
-    if not CSV_FILE.exists():
-        print(f"⚠ Erreur : {CSV_FILE.name} introuvable")
-        print(f"Créez un fichier {CSV_FILE.name} avec vos données.")
-        return
-    
+    events = []
+
     # Lire le CSV (avec tabulations comme séparateur)
     with open(str(CSV_FILE), 'r', encoding='utf-8') as f:
         # Détecter le séparateur (tab ou virgule)
@@ -323,8 +439,7 @@ def process_csv():
             reader = csv.reader(f, delimiter='\t')
         else:
             reader = csv.reader(f)
-        
-        count = 0
+
         for row in reader:
             # Vérifier si la ligne a assez de colonnes
             if len(row) < 7:
@@ -354,33 +469,66 @@ def process_csv():
             if not clean_name:
                 print(f"⚠ Ligne ignorée (nom invalide pour créer un fichier)")
                 continue
-            
-            print(f"\n📝 Traitement : {nom}")
-            
-            # Générer les 3 PNG
-            create_png_1_prenom(
-                nom, 
-                str(OUTPUT_DIR / f"{clean_name}.png")
-            )
-            
-            create_png_2_thema(
-                quoi, 
-                nom,
-                str(OUTPUT_DIR / f"{clean_name}_thema.png")
-            )
-            
-            create_png_3_qqo(
-                quoi, 
-                ou, 
-                quand, 
-                contact, 
-                nom,
-                str(OUTPUT_DIR / f"{clean_name}_QQO.png")
-            )
-            
-            count += 1
-        
-        print(f"\n✅ Terminé ! {count * 3} PNG générés dans {OUTPUT_DIR.name}/")
+
+            events.append({
+                'quoi': quoi,
+                'quand': quand,
+                'ou': ou,
+                'nom': nom,
+                'contact': contact,
+                'clean_name': clean_name
+            })
+
+    return events
+
+
+def process_csv():
+    """
+    Lit le CSV, vérifie les URLs puis génère tous les PNG
+    """
+    # Créer le dossier de sortie
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    if not CSV_FILE.exists():
+        print(f"⚠ Erreur : {CSV_FILE.name} introuvable")
+        print(f"Créez un fichier {CSV_FILE.name} avec vos données.")
+        return
+
+    events = read_events()
+
+    # Vérifier les URLs AVANT de créer le moindre PNG
+    if not verify_urls(events):
+        print(f"\n❌ Génération annulée. Corrigez {CSV_FILE.name} puis relancez.")
+        sys.exit(1)
+
+    for event in events:
+        nom = event['nom']
+        clean_name = event['clean_name']
+
+        print(f"\n📝 Traitement : {nom}")
+
+        # Générer les 3 PNG
+        create_png_1_prenom(
+            nom,
+            str(OUTPUT_DIR / f"{clean_name}.png")
+        )
+
+        create_png_2_thema(
+            event['quoi'],
+            nom,
+            str(OUTPUT_DIR / f"{clean_name}_thema.png")
+        )
+
+        create_png_3_qqo(
+            event['quoi'],
+            event['ou'],
+            event['quand'],
+            event['contact'],
+            nom,
+            str(OUTPUT_DIR / f"{clean_name}_QQO.png")
+        )
+
+    print(f"\n✅ Terminé ! {len(events) * 3} PNG générés dans {OUTPUT_DIR.name}/")
 
 
 if __name__ == "__main__":

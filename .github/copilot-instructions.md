@@ -24,8 +24,10 @@ Python script that automatically generates 3 PNG images per event from CSV data:
 ### Data Flow
 
 ```
-data.csv → CSV Parser → PNG Generator (Pillow) → export_png/*.png
+data.csv → CSV Parser → URL Check (urllib, stdlib) → PNG Generator (Pillow) → export_png/*.png
 ```
+
+The URL check runs before any PNG is created. If a URL fails (error) or only works over plain HTTP (warning), the user is asked to continue (O/N); answering N exits with code 1 so the launchers show the error banner.
 
 ## Code Style
 

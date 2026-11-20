@@ -109,6 +109,27 @@ Courses de caisses à savon|5ème édition
 
 Si aucun pipe n'est présent, le script détecte automatiquement si le texte doit passer en 2 lignes (pour le PNG 3 / QQO).
 
+### 🔗 Vérification des URLs
+
+Avant de créer le moindre PNG, le script vérifie que chaque URL trouvée dans le CSV (`www.…`, `http(s)://…` ou un domaine comme `chateau-veves.be`) répond bien :
+
+```
+🔗 Vérification de 3 URL(s)...
+  ⚠ maisonruraliteanhee.be : site non sécurisé (pas de HTTPS) : le navigateur affichera un avertissement  →  Julie Léonard
+  ✗ www.chateau-vevess.be : domaine introuvable (faute de frappe ?)  →  Noé Schoofs
+  ✓ www.bvhonnay.be : OK (200)
+
+Continuer quand même la génération ? (O/N) :
+```
+
+- **✗ erreur** : domaine inexistant (faute de frappe), page introuvable (404) ou site qui ne répond pas.
+- **⚠ non sécurisé** : le site fonctionne mais seulement en `http://` (pas de HTTPS). Chrome affiche alors « Ce site ne prend pas en charge les connexions sécurisées » avant d'ouvrir la page.
+- **N** (ou Entrée) : rien n'est généré, corrige `data.csv` et relance.
+- **O** : génération malgré l'erreur ou l'avertissement (utile si tu es hors connexion, ou si le site non sécurisé est quand même le bon).
+- Les adresses e-mail et les mentions du type « Facebook : Nom de la page » ne sont pas vérifiées.
+- Pour Facebook, seule l'existence du site est vérifiée : une page Facebook mal orthographiée n'est pas détectée.
+- Une connexion internet est nécessaire pour la vérification.
+
 ## 📤 Résultat
 
 Pour chaque ligne du CSV, le script génère 3 PNG dans `export_png/` :
